@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <UseCodebase>true</UseCodebase>
+    <IsVsixProject>true</IsVsixProject>
+    <CreateVsixContainer>true</CreateVsixContainer>
+    <RootNamespace>ClaudeCommit</RootNamespace>
+    <AssemblyName>ClaudeCommit</AssemblyName>
+    <Nullable>disable</Nullable>
+    <LangVersion>8.0</LangVersion>
+    <!-- Required for CreateVsixContainer target in SDK-style projects -->
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <!-- No project/item templates — satisfy GenerateTemplatesManifest without error -->
+    <TemplateOutputDirectory Condition="'$(TemplateOutputDirectory)' == ''">$(OutputPath)</TemplateOutputDirectory>
+    <!-- SDK-style projects add the tfm subfolder late; set these explicitly so tools find the right paths -->
+    <CreatePkgDefAssemblyToProcess>$(MSBuildProjectDirectory)\bin\$(Configuration)\net472\$(AssemblyName).dll</CreatePkgDefAssemblyToProcess>
+    <TargetVsixContainer>$(MSBuildProjectDirectory)\bin\$(Configuration)\net472\$(AssemblyName).vsix</TargetVsixContainer>
+  </PropertyGroup>
+
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets"
+          Condition="'$(VSToolsPath)' != '' and Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
+
+  <!-- No-op: no project/item templates in this extension -->
+  <Target Name="GenerateTemplatesManifest" />
+
+  <!-- SDK-style projects don't auto-hook VSIX packaging into the build chain; wire it in explicitly -->
+  <Target Name="_PackageVsix" AfterTargets="Build" DependsOnTargets="GeneratePkgDef;CopyPkgDef">
+    <CallTarget Targets="CreateVsixContainer" />
+  </Target>
+
+  <ItemGroup>
+    <Content Include="source.extension.vsixmanifest">
+      <SubType>Designer</SubType>
+    </Content>
+    <VSCTCompile Include="Commands\ClaudeCommit.vsct">
+      <ResourceName>Menus.ctmenu</ResourceName>
+    </VSCTCompile>
+    <!-- Marketplace assets — must be packaged into the VSIX -->
+    <Content Include="Resources\icon.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\LICENSE.txt">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- UIAutomationClient + UIAutomationTypes are GAC assemblies in net472 -->
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
+    <!-- WPF assemblies for visual tree injection into Git Changes toolbar -->
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Community.VisualStudio.Toolkit.17 targets VS 2022 (17.x).
+      When VS 2026 ships a new major version, bump to the matching toolkit version.
+    -->
+    <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.*-*" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.*-*" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.*-*" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

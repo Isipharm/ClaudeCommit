@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable"
+              xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
+
+  <Commands package="guidClaudeCommitPackage">
+
+    <Groups>
+      <!-- Primary: Extensions menu (IDM_VS_MENU_ADDINS = "Add-ins" slot, renamed to Extensions in VS 2019+) -->
+      <Group guid="guidClaudeCommitCmdSet" id="ClaudeCommitExtensionsGroup" priority="0x0100">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_ADDINS"/>
+      </Group>
+      <!-- Secondary: Tools menu -->
+      <Group guid="guidClaudeCommitCmdSet" id="ClaudeCommitToolsGroup" priority="0x0700">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS"/>
+      </Group>
+    </Groups>
+
+    <Buttons>
+
+      <!-- Always visible; disabled + text updated while generating via BeforeQueryStatus -->
+      <Button guid="guidClaudeCommitCmdSet"
+              id="GenerateCommitMessageCommandId"
+              priority="0x0100"
+              type="Button">
+        <Parent guid="guidClaudeCommitCmdSet" id="ClaudeCommitExtensionsGroup"/>
+        <CommandFlag>TextChanges</CommandFlag>
+        <Strings>
+          <ButtonText>Generate Commit Message with Claude</ButtonText>
+          <ToolTipText>Generate a commit message for current changes using Claude CLI</ToolTipText>
+        </Strings>
+      </Button>
+
+      <!-- Visible only while generating — toggled by BeforeQueryStatus in CancelGenerationCommand -->
+      <Button guid="guidClaudeCommitCmdSet"
+              id="CancelGenerationCommandId"
+              priority="0x0101"
+              type="Button">
+        <Parent guid="guidClaudeCommitCmdSet" id="ClaudeCommitExtensionsGroup"/>
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Cancel Claude Generation</ButtonText>
+          <ToolTipText>Cancel the in-progress commit message generation</ToolTipText>
+        </Strings>
+      </Button>
+
+    </Buttons>
+
+  </Commands>
+
+  <!-- Mirror both commands into Tools menu as well -->
+  <CommandPlacements>
+    <CommandPlacement guid="guidClaudeCommitCmdSet" id="GenerateCommitMessageCommandId" priority="0x0100">
+      <Parent guid="guidClaudeCommitCmdSet" id="ClaudeCommitToolsGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="guidClaudeCommitCmdSet" id="CancelGenerationCommandId" priority="0x0101">
+      <Parent guid="guidClaudeCommitCmdSet" id="ClaudeCommitToolsGroup"/>
+    </CommandPlacement>
+  </CommandPlacements>
+
+  <Symbols>
+    <GuidSymbol name="guidClaudeCommitPackage" value="{2E4A8F3C-1B5D-4E6A-9C7B-0D3E5F7A9B1C}" />
+
+    <GuidSymbol name="guidClaudeCommitCmdSet" value="{3F5B9E4D-2C6A-4F7B-8D9E-1E4F6A8B0C2D}">
+      <IDSymbol name="ClaudeCommitExtensionsGroup"    value="0x1021"/>
+      <IDSymbol name="ClaudeCommitToolsGroup"         value="0x1020"/>
+      <IDSymbol name="GenerateCommitMessageCommandId" value="0x0100"/>
+      <IDSymbol name="CancelGenerationCommandId"      value="0x0101"/>
+    </GuidSymbol>
+  </Symbols>
+
+</CommandTable>

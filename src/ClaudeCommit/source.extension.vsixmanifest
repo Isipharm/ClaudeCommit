@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <!--
+      Publisher must match your Visual Studio Marketplace publisher account.
+      Create / manage at: https://marketplace.visualstudio.com/manage/publishers
+      Publisher account "Isipharm" must exist before uploading to Marketplace.
+    -->
+    <Identity Id="Isipharm.ClaudeCommit" Version="1.0.26" Language="en-US" Publisher="Isipharm" />
+    <DisplayName>ClaudeCommit — AI Commit Messages</DisplayName>
+    <!-- 280-char max for the in-manifest description; full overview lives in the Marketplace portal -->
+    <Description xml:space="preserve">Generate Git commit messages and TFVC check-in comments using Claude AI. One click injects the message directly into the Git Changes or Pending Changes panel. Supports VS 2022 and VS 2026. Requires Claude CLI.</Description>
+    <!-- Element order is schema-enforced: MoreInfo -> License -> GettingStartedGuide -> ReleaseNotes -> Icon -> Tags -> Categories -->
+    <MoreInfo>https://github.com/Isipharm/ClaudeCommit</MoreInfo>
+    <License>Resources\LICENSE.txt</License>
+    <GettingStartedGuide>https://github.com/Isipharm/ClaudeCommit#readme</GettingStartedGuide>
+    <ReleaseNotes>https://github.com/Isipharm/ClaudeCommit/releases</ReleaseNotes>
+    <Icon>Resources\icon.png</Icon>
+    <Tags>git, commit, claude, ai, tfvc, conventional commits, productivity, llm</Tags>
+    <Categories>Productivity, Source Control</Categories>
+  </Metadata>
+  <Installation>
+    <!-- VS 2022 (17.x) through VS 2026 (18.x) â€” x64 only (VS 2022+) -->
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,19.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Professional" Version="[17.0,19.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+    <InstallationTarget Id="Microsoft.VisualStudio.Enterprise" Version="[17.0,19.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName=".NET Framework" d:Source="Manual" Version="[4.7.2,)" />
+  </Dependencies>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,)" DisplayName="Visual Studio core editor" />
+  </Prerequisites>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+  </Assets>
+</PackageManifest>
