@@ -3,6 +3,7 @@
     "internalName": "ClaudeCommit"
   },
   "categories": [
+    "Tools",
     "Source Control"
   ],
   "installationTargets": [
