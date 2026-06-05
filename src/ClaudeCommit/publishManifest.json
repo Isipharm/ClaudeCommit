@@ -1,0 +1,14 @@
+{
+  "categories": [
+    "Productivity",
+    "Source Control"
+  ],
+  "installationTargets": [
+    { "sku": "Microsoft.VisualStudio.Community",    "version": "[17.0,19.0)" },
+    { "sku": "Microsoft.VisualStudio.Professional", "version": "[17.0,19.0)" },
+    { "sku": "Microsoft.VisualStudio.Enterprise",   "version": "[17.0,19.0)" }
+  ],
+  "pricing": "Free",
+  "qna": "false",
+  "repo": "https://github.com/Isipharm/ClaudeCommit"
+}

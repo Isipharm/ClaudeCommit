@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write   # needed to create GitHub Releases
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"          # e.g. v1.0.27
+          $version = $tag.TrimStart('v')            # e.g. 1.0.27
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Inject version into vsixmanifest
+        shell: pwsh
+        run: |
+          $manifest = "src/ClaudeCommit/source.extension.vsixmanifest"
+          $version   = "${{ steps.version.outputs.VERSION }}"
+          (Get-Content $manifest) `
+            -replace 'Version="[^"]*"', "Version=""$version""" |
+            Set-Content $manifest
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Build VSIX
+        shell: pwsh
+        run: dotnet build src/ClaudeCommit/ClaudeCommit.csproj -c Release
+
+      - name: Locate VsixPublisher.exe
+        id: vsix_publisher
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstall = & $vswhere -latest -products * -property installationPath
+          $publisher = Join-Path $vsInstall "VSSDK\VisualStudioIntegration\Tools\Bin\VsixPublisher.exe"
+          if (-not (Test-Path $publisher)) {
+            Write-Error "VsixPublisher.exe not found at: $publisher"
+            exit 1
+          }
+          echo "PATH=$publisher" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $vsix    = "src/ClaudeCommit/bin/Release/net472/ClaudeCommit.vsix"
+          $tag     = "${{ github.ref_name }}"
+          $version = "${{ steps.version.outputs.VERSION }}"
+          gh release create $tag $vsix `
+            --title "v$version" `
+            --generate-notes
+
+      - name: Publish to VS Marketplace
+        shell: pwsh
+        env:
+          VSIX_MARKETPLACE_PAT: ${{ secrets.VSIX_MARKETPLACE_PAT }}
+        run: |
+          $publisher = "${{ steps.vsix_publisher.outputs.PATH }}"
+          $vsix      = "src/ClaudeCommit/bin/Release/net472/ClaudeCommit.vsix"
+          $manifest  = "src/ClaudeCommit/publishManifest.json"
+          & $publisher update `
+            -payload $vsix `
+            -publishManifest $manifest `
+            -personalAccessToken $env:VSIX_MARKETPLACE_PAT
