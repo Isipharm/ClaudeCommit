@@ -27,11 +27,21 @@ jobs:
       - name: Inject version into vsixmanifest
         shell: pwsh
         run: |
-          $manifest = "src/ClaudeCommit/source.extension.vsixmanifest"
-          $version   = "${{ steps.version.outputs.VERSION }}"
-          (Get-Content $manifest) `
-            -replace 'Version="[^"]*"', "Version=""$version""" |
-            Set-Content $manifest
+          $manifestPath = "src/ClaudeCommit/source.extension.vsixmanifest"
+          $version      = "${{ steps.version.outputs.VERSION }}"
+
+          $xml = [xml][System.IO.File]::ReadAllText($manifestPath)
+          $ns  = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+          $ns.AddNamespace("vsx", "http://schemas.microsoft.com/developer/vsx-schema/2011")
+          $xml.SelectSingleNode("//vsx:Identity", $ns).SetAttribute("Version", $version)
+
+          # Write back as UTF-8 without BOM — required by the VSIX manifest parser
+          $settings          = New-Object System.Xml.XmlWriterSettings
+          $settings.Encoding = [System.Text.UTF8Encoding]::new($false)
+          $settings.Indent   = $true
+          $writer = [System.Xml.XmlWriter]::Create($manifestPath, $settings)
+          $xml.Save($writer)
+          $writer.Close()
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
