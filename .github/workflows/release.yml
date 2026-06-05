@@ -85,7 +85,7 @@ jobs:
           $publisher = "${{ steps.vsix_publisher.outputs.PATH }}"
           $vsix      = "src/ClaudeCommit/bin/Release/net472/ClaudeCommit.vsix"
           $manifest  = "src/ClaudeCommit/publishManifest.json"
-          & $publisher update `
+          & $publisher publish `
             -payload $vsix `
             -publishManifest $manifest `
             -personalAccessToken $env:VSIX_MARKETPLACE_PAT
