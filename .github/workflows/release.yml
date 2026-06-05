@@ -20,8 +20,8 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"          # e.g. v1.0.27
-          $version = $tag.TrimStart('v')            # e.g. 1.0.27
+          $tag = "${{ github.ref_name }}"                    # e.g. v1.0.27 or v1.0.27-rc1
+          $version = ($tag.TrimStart('v') -split '-')[0]   # numeric part only: 1.0.27
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
 
       - name: Inject version into vsixmanifest
