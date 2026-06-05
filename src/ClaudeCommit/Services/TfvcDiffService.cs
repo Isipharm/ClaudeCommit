@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ClaudeCommit.UI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -31,43 +35,158 @@ namespace ClaudeCommit.Services
             var solutionDir = await GetSolutionDirAsync(cancellationToken);
             if (string.IsNullOrEmpty(solutionDir)) return DiffResult.Empty;
 
-            // Run tf.exe commands on thread-pool to keep VS UI thread free
+            // TryGetIncludedChangesAsync runs on main thread; null means VS API unavailable
+            // (InfoBar warning already shown), empty list means user excluded everything.
+            var includedChanges = await TryGetIncludedChangesAsync(cancellationToken);
+
             return await Task.Run(async () =>
             {
-                // Step 1: pending-change summary
-                var rawStatus = await RunTfAsync(
-                    tfExe,
-                    $"status /recursive /noprompt /format:brief \"{solutionDir}\"",
-                    cancellationToken);
+                if (includedChanges != null && includedChanges.Count == 0)
+                    return DiffResult.Empty;
 
-                var status = FilterStatusLines(rawStatus);
-                if (string.IsNullOrWhiteSpace(status))
-                    return DiffResult.Empty; // nothing pending
-
-                // Step 2: unified diff of all pending changes
-                var diff = (await RunTfAsync(
-                    tfExe,
-                    $"diff /noprompt /format:unified /recursive \"{solutionDir}\"",
-                    cancellationToken)).Trim();
-
-                if (diff.Length > MaxDiffChars)
-                    diff = diff.Substring(0, MaxDiffChars) + "\n[... diff truncated — too large ...]";
-
-                return new DiffResult(
-                    statusSummary: status,
-                    diffContent:   diff,
-                    hasChanges:    true,
-                    vcsType:       VcsType.Tfvc);
+                return includedChanges != null
+                    ? await BuildIncludedOnlyDiffAsync(tfExe, includedChanges, cancellationToken)
+                    : await BuildAllChangesDiffAsync(tfExe, solutionDir, cancellationToken);
 
             }, cancellationToken);
         }
 
-        // ── helpers ───────────────────────────────────────────────────────────────
+        // ── included-only path ────────────────────────────────────────────────────
 
         /// <summary>
-        /// Strips tf.exe header lines (Collection:, Workspace:, "no pending changes") so only
-        /// the actual file entries reach the prompt.
+        /// Returns the list of included pending changes from the VS Pending Changes panel via
+        /// VersionControlExt (late-bound dynamic to avoid a hard assembly reference).
+        /// Returns null when the API is unavailable and shows an InfoBar warning so the caller
+        /// can fall back to all pending changes.
         /// </summary>
+        private async Task<IReadOnlyList<IncludedChange>> TryGetIncludedChangesAsync(CancellationToken cancellationToken)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            try
+            {
+                var dte = await _package.GetServiceAsync(typeof(EnvDTE.DTE)) as EnvDTE.DTE;
+                dynamic vcExt = dte?.GetObject("Microsoft.VisualStudio.TeamFoundation.VersionControl.VersionControlExt");
+                if (vcExt == null)
+                {
+                    await InfoBarHelper.ShowAsync(_package,
+                        "Include filter unavailable — analyzing all pending changes.",
+                        cancellationToken);
+                    return null;
+                }
+
+                var result = new List<IncludedChange>();
+                foreach (dynamic change in vcExt.PendingChanges.IncludedChanges)
+                {
+                    string localItem      = (string)change.LocalItem;
+                    string changeTypeName = change.ChangeType.ToString().ToLowerInvariant();
+                    result.Add(new IncludedChange(localItem, changeTypeName));
+                }
+                return result;
+            }
+            catch
+            {
+                await InfoBarHelper.ShowAsync(_package,
+                    "Include filter unavailable — analyzing all pending changes.",
+                    cancellationToken);
+                return null;
+            }
+        }
+
+        private async Task<DiffResult> BuildIncludedOnlyDiffAsync(
+            string tfExe,
+            IReadOnlyList<IncludedChange> includedChanges,
+            CancellationToken cancellationToken)
+        {
+            var statusSummary = string.Join(
+                Environment.NewLine,
+                includedChanges.Select(c => $"{c.ChangeTypeName} {c.LocalItem}"));
+
+            var diffBuilder = new StringBuilder();
+
+            foreach (var change in includedChanges)
+            {
+                if (diffBuilder.Length >= MaxDiffChars) break;
+
+                var fileDiff = change.IsAdd
+                    ? BuildSyntheticAddDiff(change.LocalItem)
+                    : await RunTfAsync(tfExe, $"diff /noprompt /format:unified \"{change.LocalItem}\"", cancellationToken);
+
+                if (string.IsNullOrEmpty(fileDiff)) continue;
+
+                diffBuilder.Append(fileDiff);
+                if (!fileDiff.EndsWith("\n") && !fileDiff.EndsWith("\r\n"))
+                    diffBuilder.AppendLine();
+            }
+
+            var diff = diffBuilder.ToString();
+            if (diff.Length > MaxDiffChars)
+                diff = diff.Substring(0, MaxDiffChars) + "\n[... diff truncated — too large ...]";
+
+            return new DiffResult(
+                statusSummary: statusSummary,
+                diffContent:   diff.Trim(),
+                hasChanges:    true,
+                vcsType:       VcsType.Tfvc);
+        }
+
+        /// <summary>
+        /// Builds a unified-diff block for a newly added file (no server-side base to diff against).
+        /// </summary>
+        private static string BuildSyntheticAddDiff(string localPath)
+        {
+            try
+            {
+                if (!File.Exists(localPath)) return string.Empty;
+
+                var lines = File.ReadAllLines(localPath);
+                var sb    = new StringBuilder();
+                sb.AppendLine("--- /dev/null");
+                sb.AppendLine($"+++ b/{localPath.Replace('\\', '/')}");
+                sb.AppendLine($"@@ -0,0 +1,{lines.Length} @@");
+                foreach (var line in lines)
+                    sb.AppendLine($"+{line}");
+                return sb.ToString();
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        // ── all-changes fallback path ─────────────────────────────────────────────
+
+        private async Task<DiffResult> BuildAllChangesDiffAsync(
+            string tfExe,
+            string solutionDir,
+            CancellationToken cancellationToken)
+        {
+            var rawStatus = await RunTfAsync(
+                tfExe,
+                $"status /recursive /noprompt /format:brief \"{solutionDir}\"",
+                cancellationToken);
+
+            var status = FilterStatusLines(rawStatus);
+            if (string.IsNullOrWhiteSpace(status))
+                return DiffResult.Empty;
+
+            var diff = (await RunTfAsync(
+                tfExe,
+                $"diff /noprompt /format:unified /recursive \"{solutionDir}\"",
+                cancellationToken)).Trim();
+
+            if (diff.Length > MaxDiffChars)
+                diff = diff.Substring(0, MaxDiffChars) + "\n[... diff truncated — too large ...]";
+
+            return new DiffResult(
+                statusSummary: status,
+                diffContent:   diff,
+                hasChanges:    true,
+                vcsType:       VcsType.Tfvc);
+        }
+
+        // ── helpers ───────────────────────────────────────────────────────────────
+
         private static string FilterStatusLines(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
@@ -124,6 +243,22 @@ namespace ClaudeCommit.Services
 
                 return output;
             }
+        }
+
+        // ── types ─────────────────────────────────────────────────────────────────
+
+        private readonly struct IncludedChange
+        {
+            public IncludedChange(string localItem, string changeTypeName)
+            {
+                LocalItem      = localItem;
+                ChangeTypeName = changeTypeName;
+                IsAdd          = changeTypeName.Contains("add");
+            }
+
+            public string LocalItem      { get; }
+            public string ChangeTypeName { get; }
+            public bool   IsAdd          { get; }
         }
     }
 }
