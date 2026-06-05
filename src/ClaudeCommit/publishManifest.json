@@ -1,17 +1,12 @@
 {
+  "$schema": "http://json.schemastore.org/vsix-publish",
   "identity": {
     "internalName": "ClaudeCommit"
   },
-  "categories": [
-    "Tools",
-    "Source Control"
-  ],
-  "installationTargets": [
-    { "sku": "Microsoft.VisualStudio.Community",    "version": "[17.0,19.0)" },
-    { "sku": "Microsoft.VisualStudio.Professional", "version": "[17.0,19.0)" },
-    { "sku": "Microsoft.VisualStudio.Enterprise",   "version": "[17.0,19.0)" }
-  ],
-  "pricing": "Free",
-  "qna": "false",
+  "publisher": "Isipharm",
+  "overview": "../../README.md",
+  "categories": [ "source control", "visual studio extensions" ],
+  "priceCategory": "free",
+  "qna": false,
   "repo": "https://github.com/Isipharm/ClaudeCommit"
 }
