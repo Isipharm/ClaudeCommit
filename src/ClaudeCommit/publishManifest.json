@@ -1,4 +1,7 @@
 {
+  "identity": {
+    "internalName": "ClaudeCommit"
+  },
   "installationTargets": [
     { "sku": "Microsoft.VisualStudio.Community",    "version": "[17.0,19.0)" },
     { "sku": "Microsoft.VisualStudio.Professional", "version": "[17.0,19.0)" },
