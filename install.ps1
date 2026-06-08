@@ -26,6 +26,10 @@ if ($LASTEXITCODE -ne 0) { Write-Error "Build failed"; exit 1 }
 if (-not (Test-Path $vsix)) { Write-Error "VSIX not generated"; exit 1 }
 Write-Host "VSIX ready: $vsix"
 
+# kill lingering MSBuild worker nodes left by dotnet build — they block VSIXInstaller
+Stop-Process -Name "MSBuild" -Force -ErrorAction SilentlyContinue
+Write-Host "MSBuild workers terminated."
+
 # wait for all VS instances to close before installing
 $installers = @(
     "C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\VSIXInstaller.exe",
@@ -47,15 +51,19 @@ if ($running) {
     $null = Read-Host
 }
 
-# verify VS is actually gone before proceeding
+# verify VS and its satellite processes are gone before proceeding
+$blockers = "devenv", "copilot-language-server"
 $retries = 0
-while ((Get-Process devenv -ErrorAction SilentlyContinue) -and $retries -lt 30) {
-    Write-Host "  Waiting for devenv.exe to exit..." -ForegroundColor DarkYellow
+while ($retries -lt 30) {
+    $still = $blockers | ForEach-Object { Get-Process $_ -ErrorAction SilentlyContinue } | Where-Object { $_ }
+    if (-not $still) { break }
+    Write-Host "  Waiting for $($still.Name -join ', ') to exit..." -ForegroundColor DarkYellow
     Start-Sleep -Seconds 2
     $retries++
 }
-if (Get-Process devenv -ErrorAction SilentlyContinue) {
-    Write-Error "devenv.exe still running after wait — installation aborted."
+$still = $blockers | ForEach-Object { Get-Process $_ -ErrorAction SilentlyContinue } | Where-Object { $_ }
+if ($still) {
+    Write-Error "$($still.Name -join ', ') still running after wait — installation aborted."
     exit 1
 }
 

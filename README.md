@@ -9,7 +9,7 @@ One click in the Git Changes or Pending Changes panel sends your diff to Claude 
 ## Features
 
 - **Git & TFVC support** — works with both Git repositories and Team Foundation Version Control pending changes
-- **One-click generation** — toolbar button in the Git Changes / Pending Changes panel triggers generation instantly
+- **One-click generation** — a **Generate Commit Message** button is injected directly above the commit message field in the Git Changes and Pending Changes panels; no menu navigation required
 - **Conventional Commits by default** — default prompt produces `type(scope): description` messages
 - **Fully customizable prompts** — edit the prompt template in *Tools > Options > Claude Commit* using `{diff}` and `{status}` placeholders
 - **Cancel mid-generation** — a Cancel button replaces the toolbar button while Claude is running; click it to kill the process and restore the panel
@@ -47,13 +47,25 @@ Search for **ClaudeCommit** in *Extensions > Manage Extensions* or visit the [Ma
 
 ## Usage
 
+### Git (Git Changes panel)
+
 1. Make changes in your repository
-2. Open the **Tools** menu
-3. Click the **Generate Commit Message with Claude** menu option
-4. Claude generates a message and injects it into the commit message field
+2. Open the **Git Changes** panel (*View > Git Changes* or `Ctrl+0, Ctrl+G`)
+3. Click **Generate Commit Message** above the commit message field
+4. Claude generates a message and injects it into the field
 5. Review, edit if needed, then commit
 
-For TFVC, the same process is available.
+### TFVC (Pending Changes panel)
+
+1. Make your pending changes
+2. Open **View > Pending Changes**
+3. Click **Generate Commit Message** above the check-in comment field
+4. Claude generates a message and injects it into the field
+5. Review, edit if needed, then check in
+
+> **Tip:** While Claude is running the button changes to **Cancel Generation** — click it at any time to abort.
+
+The same commands are also available from the **Tools** menu and the **Extensions** menu if you prefer keyboard-driven access.
 
 ---
 
@@ -120,6 +132,14 @@ cd ClaudeCommit
 ```
 
 The output VSIX is written to `src/ClaudeCommit/bin/Release/net472/`.
+
+### Local install (dev workflow)
+
+`install.ps1` bumps the patch version, builds the VSIX, kills lingering MSBuild workers, waits for all Visual Studio instances to close, then installs into every detected VS instance:
+
+```powershell
+.\install.ps1
+```
 
 ---
 

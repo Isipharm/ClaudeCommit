@@ -1,7 +1,10 @@
 # ClaudeCommit — Domain Glossary
 
 ## Git Changes View
-The built-in Visual Studio panel showing all current repository changes (staged and unstaged). The extension adds UI elements to this view.
+The built-in Visual Studio panel showing all current repository changes (staged and unstaged). The extension injects a Generate Commit Message button directly above the commit message text field in this view.
+
+## Pending Changes View
+The Visual Studio panel for TFVC (Team Foundation Version Control) pending changes and check-in comments. The extension injects a Generate Commit Message button directly above the check-in comment text field in this view.
 
 ## Changes
 All modified, added, or deleted files in the working tree — both staged and unstaged. The full set of Changes is what feeds Generation, not just staged files.
@@ -21,11 +24,11 @@ The `claude` command-line tool that must be installed on the developer's machine
 ## Prompt Template
 A user-configurable text template, editable in VS Tools > Options, that defines what is sent to the Claude CLI. Contains a `{diff}` placeholder which is replaced with the current Diff at generation time. A default template ships with the extension.
 
-## Toolbar Button
-The primary UI entry point in the Git Changes View toolbar that triggers Generation. Disabled and shows a spinner during active Generation; replaced by a Cancel Button while generating.
+## Generate Button
+The primary UI entry point injected above the commit message (or check-in comment) text field in the Git Changes View and Pending Changes View. Clicking it triggers Generation. Replaced by the Cancel Button while Generation is active.
 
 ## Cancel Button
-Replaces the Toolbar Button during Generation. Clicking it kills the Claude CLI process and restores the Toolbar Button.
+Replaces the Generate Button during active Generation. Clicking it cancels the Claude CLI process and restores the Generate Button.
 
 ## InfoBar
 A non-blocking, dismissible notification bar shown in the Git Changes View when Generation fails (e.g., Claude CLI not installed, process error). May contain actionable links.

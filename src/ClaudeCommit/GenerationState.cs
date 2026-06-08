@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 
 namespace ClaudeCommit
@@ -8,6 +9,9 @@ namespace ClaudeCommit
         private CancellationTokenSource _cts;
 
         public bool IsGenerating { get; private set; }
+
+        /// <summary>Fired on the thread that calls TryStart/Stop. Arg is the new IsGenerating value.</summary>
+        public event Action<bool> IsGeneratingChanged;
 
         // Returns (token, success). success==false means generation already active — caller must not proceed.
         public bool TryStart(out CancellationToken token)
@@ -22,8 +26,9 @@ namespace ClaudeCommit
                 _cts = new CancellationTokenSource();
                 IsGenerating = true;
                 token = _cts.Token;
-                return true;
             }
+            IsGeneratingChanged?.Invoke(true);
+            return true;
         }
 
         public void Stop()
@@ -34,6 +39,7 @@ namespace ClaudeCommit
                 _cts?.Dispose();
                 _cts = null;
             }
+            IsGeneratingChanged?.Invoke(false);
         }
 
         public void Cancel()
