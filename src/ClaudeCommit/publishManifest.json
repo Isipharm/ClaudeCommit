@@ -5,7 +5,7 @@
   },
   "publisher": "Isipharm",
   "overview": "../../README.md",
-  "categories": [ "source control", "visual studio extensions" ],
+  "categories": [ "source control" ],
   "priceCategory": "free",
   "qna": false,
   "repo": "https://github.com/Isipharm/ClaudeCommit"
