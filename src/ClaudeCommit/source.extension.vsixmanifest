@@ -16,7 +16,7 @@
     <GettingStartedGuide>https://github.com/Isipharm/ClaudeCommit#readme</GettingStartedGuide>
     <ReleaseNotes>https://github.com/Isipharm/ClaudeCommit/releases</ReleaseNotes>
     <Icon>Resources\icon.png</Icon>
-    <Tags>git, commit, claude, ai, tfvc, conventional commits, productivity, llm</Tags>
+    <Tags>git, claude, ai, tfvc, conventional commits</Tags>
     <Categories>Productivity, Source Control</Categories>
   </Metadata>
   <Installation>
