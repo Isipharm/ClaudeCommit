@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ClaudeCommit.Commands;
+using ClaudeCommit.UI;
 using ClaudeCommit.Options;
 using ClaudeCommit.Services;
 using Microsoft.VisualStudio.Shell;
@@ -62,6 +63,9 @@ namespace ClaudeCommit
 
             await GenerateCommitMessageCommand.InitializeAsync(this);
             await CancelGenerationCommand.InitializeAsync(this);
+
+            new GitChangesButtonInjector(this).Start();
+            new PendingChangesButtonInjector(this).Start();
         }
 
         internal ClaudeCommitOptions GetOptions()

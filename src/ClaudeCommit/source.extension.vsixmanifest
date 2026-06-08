@@ -6,7 +6,7 @@
       Create / manage at: https://marketplace.visualstudio.com/manage/publishers
       Publisher account "Isipharm" must exist before uploading to Marketplace.
     -->
-    <Identity Id="Isipharm.ClaudeCommit" Version="1.0.26" Language="en-US" Publisher="Isipharm" />
+    <Identity Id="Isipharm.ClaudeCommit" Version="1.0.36" Language="en-US" Publisher="Isipharm" />
     <DisplayName>ClaudeCommit — AI Commit Messages</DisplayName>
     <!-- 280-char max for the in-manifest description; full overview lives in the Marketplace portal -->
     <Description xml:space="preserve">Generate Git commit messages and TFVC check-in comments using Claude AI. One click injects the message directly into the Git Changes or Pending Changes panel. Supports VS 2022 and VS 2026. Requires Claude CLI.</Description>
