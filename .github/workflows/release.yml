@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write   # needed to create GitHub Releases
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"                    # e.g. v1.0.27 or v1.0.27-rc1
+          $version = ($tag.TrimStart('v') -split '-')[0]   # numeric part only: 1.0.27
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Inject version into vsixmanifest
+        shell: pwsh
+        run: |
+          $manifestPath = "src/ClaudeCommit/source.extension.vsixmanifest"
+          $version      = "${{ steps.version.outputs.VERSION }}"
+
+          $xml = [xml][System.IO.File]::ReadAllText($manifestPath)
+          $ns  = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+          $ns.AddNamespace("vsx", "http://schemas.microsoft.com/developer/vsx-schema/2011")
+          $xml.SelectSingleNode("//vsx:Identity", $ns).SetAttribute("Version", $version)
+
+          # Write back as UTF-8 without BOM — required by the VSIX manifest parser
+          $settings          = New-Object System.Xml.XmlWriterSettings
+          $settings.Encoding = [System.Text.UTF8Encoding]::new($false)
+          $settings.Indent   = $true
+          $writer = [System.Xml.XmlWriter]::Create($manifestPath, $settings)
+          $xml.Save($writer)
+          $writer.Close()
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Build VSIX
+        shell: pwsh
+        run: dotnet build src/ClaudeCommit/ClaudeCommit.csproj -c Release
+
+      - name: Locate VsixPublisher.exe
+        id: vsix_publisher
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstall = & $vswhere -latest -products * -property installationPath
+          $publisher = Join-Path $vsInstall "VSSDK\VisualStudioIntegration\Tools\Bin\VsixPublisher.exe"
+          if (-not (Test-Path $publisher)) {
+            Write-Error "VsixPublisher.exe not found at: $publisher"
+            exit 1
+          }
+          echo "PATH=$publisher" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $vsix    = "src/ClaudeCommit/bin/Release/net472/ClaudeCommit.vsix"
+          $tag     = "${{ github.ref_name }}"
+          $version = "${{ steps.version.outputs.VERSION }}"
+          gh release create $tag $vsix `
+            --title "v$version" `
+            --generate-notes
+
+      - name: Publish to VS Marketplace
+        shell: pwsh
+        env:
+          VSIX_MARKETPLACE_PAT: ${{ secrets.VSIX_MARKETPLACE_PAT }}
+        run: |
+          $publisher = "${{ steps.vsix_publisher.outputs.PATH }}"
+          $vsix      = "src/ClaudeCommit/bin/Release/net472/ClaudeCommit.vsix"
+          $manifest  = "src/ClaudeCommit/publishManifest.json"
+          & $publisher publish `
+            -payload $vsix `
+            -publishManifest $manifest `
+            -personalAccessToken $env:VSIX_MARKETPLACE_PAT
