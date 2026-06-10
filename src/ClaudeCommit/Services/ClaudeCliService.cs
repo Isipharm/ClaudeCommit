@@ -9,11 +9,14 @@ namespace ClaudeCommit.Services
     internal sealed class ClaudeCliService : IClaudeCliService
     {
         private readonly Func<string> _getCliPath;
+        private readonly Func<string> _getModel;
 
         // getCliPath: returns user-configured CLI path from options; falls back to "claude" on PATH
-        public ClaudeCliService(Func<string> getCliPath = null)
+        // getModel: returns user-configured model alias/ID; null or empty omits --model flag
+        public ClaudeCliService(Func<string> getCliPath = null, Func<string> getModel = null)
         {
             _getCliPath = getCliPath ?? (() => null);
+            _getModel   = getModel   ?? (() => null);
         }
 
         private string CliPath
@@ -53,10 +56,13 @@ namespace ClaudeCommit.Services
         {
             using (var process = new Process())
             {
+                var model = _getModel?.Invoke();
+                var args  = string.IsNullOrWhiteSpace(model) ? "--print" : $"--model {model} --print";
+
                 process.StartInfo = new ProcessStartInfo
                 {
                     FileName               = CliPath,
-                    Arguments              = "--print",
+                    Arguments              = args,
                     UseShellExecute        = false,
                     RedirectStandardInput  = true,
                     RedirectStandardOutput = true,

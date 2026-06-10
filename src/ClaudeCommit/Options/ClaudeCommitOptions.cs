@@ -51,5 +51,13 @@ namespace ClaudeCommit.Options
             "Absolute path to the claude executable. " +
             "Leave empty to use 'claude' from your system PATH.")]
         public string ClaudeCliPath { get; set; } = string.Empty;
+
+        [Category("General")]
+        [DisplayName("Model")]
+        [Description(
+            "Model passed to the Claude CLI via --model. " +
+            "Accepts aliases (e.g. 'haiku', 'sonnet', 'opus') or full model IDs (e.g. 'claude-haiku-4-5-20251001'). " +
+            "Leave empty to use the CLI's default model.")]
+        public string ClaudeModel { get; set; } = "haiku";
     }
 }
