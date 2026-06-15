@@ -48,7 +48,7 @@ namespace ClaudeCommit
             PromptTemplateService = new PromptTemplateService(this);
             GitDiffService        = new GitDiffService(this);
             TfvcDiffService       = new TfvcDiffService(this, tfExeLocator);
-            ClaudeCliService      = new ClaudeCliService(() => GetOptions().ClaudeCliPath);
+            ClaudeCliService      = new ClaudeCliService(() => GetOptions().ClaudeCliPath, () => GetOptions().ClaudeModel);
             VcsDetector           = new VcsDetectorService(this, tfExeLocator);
             VcsViewActivator      = new VcsViewActivator(this);
             CommitMessageInjector = new CommitMessageInjector(this);
