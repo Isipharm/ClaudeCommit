@@ -30,7 +30,14 @@ namespace ClaudeCommit.Services
         public async Task<DiffResult> GetDiffAsync(CancellationToken cancellationToken)
         {
             var tfExe = _tfExeLocator.FindTfExe();
-            if (tfExe == null) return DiffResult.Empty;
+            if (tfExe == null)
+            {
+                await InfoBarHelper.ShowErrorAsync(
+                    _package,
+                    "TF.exe could not be found. Ensure Team Explorer is installed or tf.exe is on your PATH.",
+                    cancellationToken);
+                return DiffResult.Empty;
+            }
 
             var solutionDir = await GetSolutionDirAsync(cancellationToken);
             if (string.IsNullOrEmpty(solutionDir)) return DiffResult.Empty;
